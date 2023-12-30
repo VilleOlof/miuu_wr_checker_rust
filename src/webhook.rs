@@ -1,11 +1,11 @@
-use std::{collections::HashMap, env::var};
+use std::collections::HashMap;
 
 use chrono::{DateTime, Utc};
 use colored::Colorize;
 use reqwest::{header::CONTENT_TYPE, Client};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
-use crate::score::Score;
+use crate::{config::SETTINGS, score::Score};
 
 pub async fn send_webhooks(
     client: &Client,
@@ -27,22 +27,49 @@ pub async fn send_webhooks(
             request_data.embeds.push(get_embed(new, prev, level_title))
         }
 
-        if let Ok(url) = get_webhook_url() {
-            match client
-                .post(url)
-                .json(&request_data)
-                .header(CONTENT_TYPE, "application/json")
-                .send()
-                .await
-            {
-                Err(err) => println!(
-                    "{}: {}",
+        send_to_all_webhooks(client, &request_data).await;
+    }
+}
+
+async fn send_to_all_webhooks(client: &Client, embeds: &WebhookRequest) -> Vec<String> {
+    let mut ids: Vec<String> = vec![];
+
+    for url in &SETTINGS.read().unwrap().discord.webhooks {
+        let response: WebhookResponse = match client
+            .post(url.to_owned() + "?wait=true")
+            .json(embeds)
+            .header(CONTENT_TYPE, "application/json")
+            .send()
+            .await
+        {
+            Err(err) => {
+                println!(
+                    "{}: {}, {}",
                     "Failed to send webhook to discord".red().bold(),
+                    url,
                     err
-                ),
-                _ => (),
-            };
-        }
+                );
+                continue;
+            }
+            Ok(res) => res
+                .json::<WebhookResponse>()
+                .await
+                .expect("Failed to get webhook response"),
+        };
+
+        ids.push(response.id);
+    }
+
+    ids
+}
+
+fn get_default_footer() -> Footer {
+    let version = env!("CARGO_PKG_VERSION");
+
+    Footer {
+        text: format!("WR Checker/{} By VilleOlof", version),
+        url: String::from(GITHUBLINK),
+        icon_url: String::from(DISCORDPFP),
     }
 }
 
@@ -62,33 +89,32 @@ fn get_embed(new: &Score, prev: &Score, level_title: String) -> Embed {
         ),
         color: 15844367,
         timestamp: new.updated_at,
-        footer: Footer {
-            text: String::from("WR Checker By VilleOlof"),
-            url: String::from(GITHUBLINK),
-            icon_url: String::from(DISCORDPFP),
-        },
-        thumbnail: Thumbnail {
+        footer: get_default_footer(),
+        thumbnail: Some(Thumbnail {
             url: String::from(THUMBNAILURL),
-        },
+        }),
         fields: vec![
             Field {
                 name: String::from("New:"),
-                value: format!("{}\n{}\n{}\n", new.time, new.username, new.platform),
+                value: format!(
+                    "{}\n{}\n{}\n",
+                    new.get_formatted_time(),
+                    new.username,
+                    new.platform
+                ),
                 inline: true,
             },
             Field {
                 name: String::from("Old:"),
-                value: format!("{}\n{}\n{}\n", prev.time, prev.username, prev.platform),
+                value: format!(
+                    "{}\n{}\n{}\n",
+                    prev.get_formatted_time(),
+                    prev.username,
+                    prev.platform
+                ),
                 inline: true,
             },
         ],
-    }
-}
-
-pub fn get_webhook_url() -> Result<String, String> {
-    match var("DISCORD_WEBHOOK") {
-        Ok(str) => Ok(str),
-        Err(err) => return Err(format!("Env Discord Webhook Error: {:?}", err).into()),
     }
 }
 
@@ -97,7 +123,14 @@ struct WebhookRequest {
     embeds: Vec<Embed>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Deserialize)]
+struct WebhookResponse {
+    id: String,
+    //...
+    // https://discord.com/developers/docs/resources/channel#message-object
+}
+
+#[derive(Debug, Serialize, Clone)]
 struct Embed {
     r#type: String,
     title: String,
@@ -105,23 +138,23 @@ struct Embed {
     color: u32,
     timestamp: DateTime<Utc>,
     footer: Footer,
-    thumbnail: Thumbnail,
+    thumbnail: Option<Thumbnail>,
     fields: Vec<Field>,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 struct Footer {
     text: String,
     url: String,
     icon_url: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 struct Thumbnail {
     url: String,
 }
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 struct Field {
     name: String,
     value: String,

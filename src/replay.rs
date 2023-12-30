@@ -2,10 +2,7 @@ use std::fs;
 
 use reqwest::Client;
 
-use crate::{
-    request::{get_appid, get_domain, raw_request},
-    score::Score,
-};
+use crate::{config::SETTINGS, request::raw_request, score::Score};
 
 pub async fn download_replay(client: &Client, score: &Score) -> Result<(), String> {
     let replay_data = match score.replay.to_owned() {
@@ -19,8 +16,8 @@ pub async fn download_replay(client: &Client, score: &Score) -> Result<(), Strin
 
     let url = match reqwest::Url::parse(&format!(
         "https://{}/parse/files/{}/{}",
-        get_domain()?,
-        get_appid()?,
+        &SETTINGS.read().unwrap().parse.domain,
+        &SETTINGS.read().unwrap().parse.appid,
         replay_data.name
     )) {
         Ok(url) => url,

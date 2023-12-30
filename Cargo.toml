@@ -2,6 +2,7 @@
 name = "miuu_wr_checker_rust"
 version = "0.1.0"
 edition = "2021"
+authors = ["VilleOlof"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
@@ -12,7 +13,10 @@ tokio = { version = "1", features = ["full"] }
 chrono = { version = "0.4.31", features = ["serde"] }
 serde = { version = "1.0.193", features = ["derive"] }
 serde_json = "1.0.108"
-dotenvy = "0.15.7"
 futures = "0.3"
 colored = "2.1.0"
 sqlx = { version = "0.7.3", features = ["runtime-tokio", "sqlite", "chrono"] }
+config = "0.13.4"
+lazy_static = "1.4.0"
+clap = { version = "4.4.12", features = ["derive"] }
+serde_with = "3.4.0"

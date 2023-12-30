@@ -10,6 +10,7 @@ use sqlx::SqliteConnection;
 
 use crate::{db::*, metadata::*, miu::get_wrs, replay::download_replay, score::Score, webhook::*};
 
+mod config;
 mod db;
 mod metadata;
 mod miu;
@@ -17,6 +18,7 @@ mod replay;
 mod request;
 mod score;
 mod webhook;
+mod weekly;
 
 const SLEEPDURATION: Duration = Duration::from_secs(120);
 
@@ -31,8 +33,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         "Starting MIU WRChecker".bold(),
         "(Rust Edition)".bright_black()
     );
-
-    dotenvy::dotenv()?;
 
     let level_ids = load_name_vec();
     let level_titles = load_name_conversion_map();
@@ -102,8 +102,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         send_webhooks(&client, new_wrs, &level_titles).await;
 
         println!(
-            "{} {} - {}",
-            format!("[{}]", start.elapsed().as_millis() as f64 / 1000.0).bright_black(),
+            "{} {:0>3} - {}",
+            format!("[{:0<5}s]", start.elapsed().as_millis() as f64 / 1000.0).bright_black(),
             iter_count,
             "Finished WR Checking Iteration".green().bold()
         );

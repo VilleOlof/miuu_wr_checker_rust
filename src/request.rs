@@ -1,8 +1,9 @@
-use std::env::var;
-
 use reqwest::{header::USER_AGENT, Client, Response, Url};
 
-use crate::score::{Results, Score};
+use crate::{
+    config::SETTINGS,
+    score::{Results, Score},
+};
 
 fn get_user_agent() -> String {
     format!(
@@ -45,17 +46,25 @@ pub async fn make_request(
 ) -> Result<Vec<Score>, Box<dyn std::error::Error>> {
     let unwrapped_path = path.unwrap_or("/parse/classes/");
 
-    let class_name = class.unwrap_or(get_classname()?);
+    let class_name = class.unwrap_or(SETTINGS.read().unwrap().parse.class_name.clone());
 
     let url = match Url::parse_with_params(
-        &format!("https://{}{}{}", get_domain()?, unwrapped_path, class_name),
+        &format!(
+            "https://{}{}{}",
+            &SETTINGS.read().unwrap().parse.domain,
+            unwrapped_path,
+            class_name
+        ),
         params,
     ) {
         Ok(url) => url,
         Err(err) => return Err(format!("Url Parse Error: {:?}", err).into()),
     };
 
-    let resp = raw_request(&client, url).await?.json::<Results>().await?;
+    let resp = raw_request(&client, url)
+        .await?
+        .json::<Results<Score>>()
+        .await?;
 
     if resp.error.is_some() {
         let (code, error) = (resp.code.unwrap(), resp.error.unwrap());
@@ -65,34 +74,13 @@ pub async fn make_request(
     Ok(resp.results.unwrap())
 }
 
-pub fn get_domain() -> Result<String, String> {
-    match var("DOMAIN") {
-        Ok(str) => Ok(str),
-        Err(err) => return Err(format!("Env Domain Error: {:?}", err).into()),
-    }
-}
-
-pub fn get_classname() -> Result<String, String> {
-    match var("CLASSNAME") {
-        Ok(str) => Ok(str),
-        Err(err) => return Err(format!("Env ClassName Error: {:?}", err).into()),
-    }
-}
-
-pub fn get_appid() -> Result<String, String> {
-    match var("APPID") {
-        Ok(str) => Ok(str),
-        Err(err) => return Err(format!("Env AppId Error: {:?}", err).into()),
-    }
-}
-
 pub async fn raw_request(
     client: &Client,
     url: Url,
 ) -> Result<Response, Box<dyn std::error::Error>> {
     match client
         .get(url)
-        .header(APPLICATION_ID_HEADER, get_appid()?)
+        .header(APPLICATION_ID_HEADER, &SETTINGS.read().unwrap().parse.appid)
         .header(USER_AGENT, get_user_agent())
         .send()
         .await

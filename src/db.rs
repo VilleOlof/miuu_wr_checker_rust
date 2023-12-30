@@ -1,9 +1,8 @@
 use chrono::{DateTime, Utc};
-use dotenvy::var;
 use sqlx::{prelude::FromRow, Connection, SqliteConnection};
 use std::collections::HashMap;
 
-use crate::score::Score;
+use crate::{config::SETTINGS, score::Score};
 
 pub async fn get_all(conn: &mut SqliteConnection, levels: &Vec<String>) -> HashMap<String, Score> {
     // maybe optimize and execute_many at some point?
@@ -27,18 +26,39 @@ pub async fn get_all(conn: &mut SqliteConnection, levels: &Vec<String>) -> HashM
 
 pub async fn update_level(conn: &mut SqliteConnection, score: &Score) -> Result<(), String> {
     //mhmhm i love those .bind, probably a way to bind a struct to values or somethning
-    match sqlx::query("INSERT INTO ? (time, username, userID, skinUsed, replayVersion, platform, createdAt, updatedAt) VALUES (?, ?, ?, ?, ?, ?, ?, ?)")
-        .bind(&score.map_id)
-        .bind(score.time)
-        .bind(score.username.clone())
-        .bind(score.user_id.clone())
-        .bind(score.skin_used.clone())
-        .bind(score.replay_version)
-        .bind(score.platform.clone())
-        .bind(score.created_at)
-        .bind(score.updated_at)
-        .execute(conn)
-        .await
+    match sqlx::query(&format!(
+        r#"
+    INSERT INTO {} (
+        time, 
+        username, 
+        userID, 
+        skinUsed, 
+        replayVersion, 
+        platform, 
+        createdAt, 
+        updatedAt
+    ) VALUES (
+            ?, 
+            ?, 
+            ?, 
+            ?, 
+            ?, 
+            ?, 
+            ?, 
+            ?
+        )"#,
+        score.map_id
+    ))
+    .bind(score.time.clone())
+    .bind(score.username.clone())
+    .bind(score.user_id.clone())
+    .bind(score.skin_used.clone())
+    .bind(score.replay_version)
+    .bind(score.platform.clone())
+    .bind(score.created_at)
+    .bind(score.updated_at)
+    .execute(conn)
+    .await
     {
         Ok(_) => Ok(()),
         Err(err) => panic!("Failed to insert new score: {}", err),
@@ -46,12 +66,9 @@ pub async fn update_level(conn: &mut SqliteConnection, score: &Score) -> Result<
 }
 
 pub async fn setup() -> SqliteConnection {
-    let url = match var("DATABASE_URL") {
-        Ok(url) => url,
-        Err(err) => panic!("Failed to get database Url: {}", err),
-    };
+    let url = &SETTINGS.read().unwrap().database_url;
 
-    match SqliteConnection::connect(&url).await {
+    match SqliteConnection::connect(url).await {
         Ok(conn) => conn,
         Err(err) => panic!("Failed to connect to database: {}", err),
     }

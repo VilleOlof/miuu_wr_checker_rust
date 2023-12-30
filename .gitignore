@@ -2,3 +2,4 @@
 /replays
 .env
 db.sqlite
+config.toml

@@ -45,8 +45,8 @@ pub struct Score {
 }
 
 #[derive(Deserialize, Debug)]
-pub struct Results {
-    pub results: Option<Vec<Score>>,
+pub struct Results<T> {
+    pub results: Option<Vec<T>>,
     pub code: Option<u32>,
     pub error: Option<String>,
 }
