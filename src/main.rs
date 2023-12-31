@@ -12,6 +12,7 @@ use crate::{db::*, metadata::*, miu::get_wrs, replay::download_replay, score::Sc
 
 mod config;
 mod db;
+mod embed;
 mod metadata;
 mod miu;
 mod replay;
@@ -19,12 +20,16 @@ mod request;
 mod score;
 mod webhook;
 mod weekly;
+mod weekly_data;
 
 const SLEEPDURATION: Duration = Duration::from_secs(120);
 
 // !! convert all String related Results to custom error
 // Send a DB backup once every 2 weeks?
 // Send a weekly recap of every new WR? sql query to sort newly ones
+
+// Weekly WR Recap: Total Improvement, each level should be a field with the name as title, value should be
+// the score, username, time, when, and then on a new line, the improvement during the week?
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -41,6 +46,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut conn = setup().await;
 
     println!("- {}", "Init Sequence Finished".green().bold());
+
+    let weekly_data = weekly_data::Weekly::fetch(&client).await.unwrap();
+    let prev_scores = weekly::fetch(
+        &client,
+        &weekly::WeekState::Previous,
+        &weekly_data.score_buckets,
+    )
+    .await
+    .unwrap();
+    weekly::send_weekly_embed(&client, &weekly_data, &prev_scores).await;
+
+    return Ok(());
 
     let mut confirmed_wrs: HashMap<String, Score> = get_all(&mut conn, &level_ids).await;
 
