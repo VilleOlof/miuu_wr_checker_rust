@@ -1,3 +1,8 @@
+//! Makes all parse requests
+//!
+//! Used to automatically send some headers alongside the actual request
+
+use anyhow::{anyhow, Result};
 use reqwest::{header::USER_AGENT, Client, Response, Url};
 
 use crate::{
@@ -43,7 +48,7 @@ pub async fn make_request(
     params: Vec<(&str, &str)>,
     path: Option<&str>,
     class: Option<String>,
-) -> Result<Vec<Score>, Box<dyn std::error::Error>> {
+) -> Result<Vec<Score>> {
     let unwrapped_path = path.unwrap_or("/parse/classes/");
 
     let class_name = class.unwrap_or(SETTINGS.read().unwrap().parse.class_name.clone());
@@ -58,7 +63,7 @@ pub async fn make_request(
         params,
     ) {
         Ok(url) => url,
-        Err(err) => return Err(format!("Url Parse Error: {:?}", err).into()),
+        Err(err) => return Err(anyhow!("Url Parse Error: {:?}", err)),
     };
 
     let resp = raw_request(&client, url)
@@ -68,16 +73,18 @@ pub async fn make_request(
 
     if resp.error.is_some() {
         let (code, error) = (resp.code.unwrap(), resp.error.unwrap());
-        return Err(format!("Parse Error: [{}] {}", code, error).into());
+        return Err(anyhow!("Parse Error: [{}] {}", code, error));
     }
 
     Ok(resp.results.unwrap())
 }
 
-pub async fn raw_request(
-    client: &Client,
-    url: Url,
-) -> Result<Response, Box<dyn std::error::Error>> {
+/// Sends a "raw" request to the specified url with some headers
+///
+/// Sends a `USER AGENT` header with the programs identifier
+///
+/// Also sends the appid from settings in a parse header
+pub async fn raw_request(client: &Client, url: Url) -> Result<Response> {
     match client
         .get(url)
         .header(APPLICATION_ID_HEADER, &SETTINGS.read().unwrap().parse.appid)
@@ -86,6 +93,6 @@ pub async fn raw_request(
         .await
     {
         Ok(res) => Ok(res),
-        Err(err) => return Err(format!("Request Error: {:?}", err.status()).into()),
+        Err(err) => return Err(anyhow!("Request Error: {:?}", err.status())),
     }
 }

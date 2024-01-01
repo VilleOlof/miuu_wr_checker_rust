@@ -1,26 +1,37 @@
+#![warn(missing_docs)]
+
+//! A program that fetches data regularly from the "Marble It Up! Ultra" backend.
+//! to then send webhooks depending on new world records, new weekly challenges and weekly WR recaps.
+//!
+//! Read the README.md for the project and how to setup the config.
+//!
+//! Project hasn't been tested from the ground up with an empty database and config
+//! So issues may appear there for now.
+
 use std::{
     collections::HashMap,
     thread::sleep,
     time::{Duration, Instant},
 };
 
+use anyhow::Result;
 use colored::*;
 use reqwest::Client;
 use sqlx::SqliteConnection;
 
 use crate::{db::*, metadata::*, miu::get_wrs, replay::download_replay, score::Score, webhook::*};
 
-mod config;
-mod db;
-mod embed;
-mod metadata;
-mod miu;
-mod replay;
-mod request;
-mod score;
-mod webhook;
-mod weekly;
-mod weekly_data;
+pub mod config;
+pub mod db;
+pub mod embed;
+pub mod metadata;
+pub mod miu;
+pub mod replay;
+pub mod request;
+pub mod score;
+pub mod webhook;
+pub mod weekly;
+pub mod weekly_data;
 
 const SLEEPDURATION: Duration = Duration::from_secs(120);
 
@@ -32,7 +43,7 @@ const SLEEPDURATION: Duration = Duration::from_secs(120);
 // the score, username, time, when, and then on a new line, the improvement during the week?
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
+async fn main() -> Result<()> {
     println!(
         "{} {}",
         "Starting MIU WRChecker".bold(),
@@ -45,19 +56,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let client = Client::new();
     let mut conn = setup().await;
 
+    create_tables(&mut conn, &level_ids).await;
+
     println!("- {}", "Init Sequence Finished".green().bold());
-
-    let weekly_data = weekly_data::Weekly::fetch(&client).await.unwrap();
-    let prev_scores = weekly::fetch(
-        &client,
-        &weekly::WeekState::Previous,
-        &weekly_data.score_buckets,
-    )
-    .await
-    .unwrap();
-    weekly::send_weekly_embed(&client, &weekly_data, &prev_scores).await;
-
-    return Ok(());
 
     let mut confirmed_wrs: HashMap<String, Score> = get_all(&mut conn, &level_ids).await;
 
@@ -117,6 +118,50 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
 
         send_webhooks(&client, new_wrs, &level_titles).await;
+
+        // Weekly part, refactor into different function
+        let new_weekly = weekly::check(&mut conn, &client).await;
+        if let Some(weekly_data) = new_weekly.1 {
+            let prev_scores = weekly::fetch(
+                &client,
+                &weekly::WeekState::Previous,
+                &weekly_data.score_buckets,
+            )
+            .await;
+
+            if let Ok(scores) = prev_scores {
+                webhook::send_weekly_embed(&client, &weekly_data, &scores).await;
+                db::upsert_weekly_end(&mut conn, weekly_data.score_buckets.current.end_date).await;
+
+                println!(
+                    "{} [{}]",
+                    "New Weekly Challenge Posted!".green().bold(),
+                    &weekly_data
+                        .score_buckets
+                        .current
+                        .get_name(weekly_data::NameLang::En)
+                );
+            }
+
+            let latest_scores = db::get_latest_world_records(
+                &mut conn,
+                chrono::Duration::days(7),
+                &level_ids,
+                &level_titles,
+            )
+            .await;
+            if let Some(scores) = latest_scores {
+                miu::weekly_recap(
+                    &client,
+                    scores,
+                    (
+                        weekly_data.score_buckets.previous.start_date,
+                        weekly_data.score_buckets.previous.end_date,
+                    ),
+                )
+                .await;
+            }
+        }
 
         println!(
             "{} {:0>3} - {}",

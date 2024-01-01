@@ -1,8 +1,10 @@
+//! Creates Discord embeds for different messages
+
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 
 use crate::{
-    score::Score,
+    score::{RecapScore, Score},
     weekly_data::{NameLang, Weekly},
 };
 
@@ -10,7 +12,7 @@ fn get_default_footer() -> Footer {
     let version = env!("CARGO_PKG_VERSION");
 
     Footer {
-        text: format!("WR Checker/{} By VilleOlof", version),
+        text: format!("MIUU:OB/{} By VilleOlof", version),
         url: String::from(GITHUBLINK),
         icon_url: String::from(DISCORDPFP),
     }
@@ -21,12 +23,13 @@ const DISCORDPFP: &str = "https://cdn.discordapp.com/attachments/365772775832420
 const THUMBNAILURL: &str =
     "https://cdn.discordapp.com/emojis/592218899441909760.webp?size=96&quality=lossless";
 
+/// Gets an embed for world record announcements
 pub fn get_score_embed(new: &Score, prev: &Score, level_title: String) -> Embed {
     Embed {
         r#type: String::from("rich"),
-        title: String::from("New Ultra World Record!"),
+        title: String::from("***New Ultra World Record!***"),
         description: format!(
-            "Level: **{}**\nImprovement: -**{}**",
+            "Level: **{}**\nImprovement: -**{:.6}**",
             level_title,
             prev.time - new.time
         ),
@@ -62,6 +65,7 @@ pub fn get_score_embed(new: &Score, prev: &Score, level_title: String) -> Embed 
     }
 }
 
+/// Gets an embed for the weekly challenge announcement post
 pub fn get_weekly_embed(weekly: &Weekly, previous_scores: &Vec<Score>) -> Embed {
     let curr_physics_mods = weekly
         .score_buckets
@@ -115,6 +119,64 @@ pub fn get_weekly_embed(weekly: &Weekly, previous_scores: &Vec<Score>) -> Embed 
     }
 }
 
+/// Gets an embed for the world record weekly recap post
+pub fn get_weekly_recap_embed(
+    scores: Vec<RecapScore>,
+    dates: (DateTime<Utc>, DateTime<Utc>),
+) -> Embed {
+    let date_format = &"%Y-%m-%d";
+
+    let fields: Vec<Field> = scores
+        .clone()
+        .into_iter()
+        .map(|s| Field {
+            name: s.level,
+            value: s
+                .scores
+                .into_iter()
+                .map(|sub| format!("- {}: **{}**", sub.username, sub.get_formatted_time()))
+                .collect::<Vec<String>>()
+                .join("\n")
+                + &format!("\n*Improvement:* ***-{:.6}***", s.improvement),
+            inline: false,
+        })
+        .collect();
+
+    Embed {
+        r#type: String::from("rich"),
+        title: String::from("***New Weekly Ultra WR Recap!***"),
+        description: format!(
+            "*Date: {}  >  {}*\nTotal New World Records: **{}**\nTotal Improvement: **-{}**",
+            dates.0.format(date_format),
+            dates.1.format(date_format),
+            scores
+                .clone()
+                .into_iter()
+                .map(|s| s.scores.len())
+                .sum::<usize>(),
+            scores
+            .clone()
+            .into_iter()
+            .map(|s| s.improvement)
+            .sum::<f32>()
+        ),
+        color: 3447003,
+        timestamp: dates.1,
+        footer: get_default_footer(),
+        thumbnail: Some(Thumbnail {
+            // Diamond Medal Emoji
+            url: String::from("https://cdn.discordapp.com/emojis/500104801691107328.webp?size=96&quality=lossless")
+        }),
+        image: None,
+        fields,
+    }
+}
+
+/// A Discord embed
+///
+/// Doesn't contain all fields according to discord docs
+///
+/// Just those that are needed
 #[derive(Debug, Serialize, Clone)]
 pub struct Embed {
     r#type: String,
@@ -128,6 +190,7 @@ pub struct Embed {
     fields: Vec<Field>,
 }
 
+/// A discord embed footer
 #[derive(Debug, Serialize, Clone)]
 pub struct Footer {
     text: String,
@@ -135,6 +198,7 @@ pub struct Footer {
     icon_url: String,
 }
 
+/// A discord embed image
 #[derive(Debug, Serialize, Clone)]
 pub struct Image {
     url: String,
@@ -143,11 +207,13 @@ pub struct Image {
     width: Option<i32>,
 }
 
+/// A discord embed thumbnail
 #[derive(Debug, Serialize, Clone)]
 pub struct Thumbnail {
     url: String,
 }
 
+/// A discord embed field
 #[derive(Debug, Serialize, Clone)]
 pub struct Field {
     name: String,

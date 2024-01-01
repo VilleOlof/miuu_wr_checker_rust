@@ -1,21 +1,20 @@
-// {"mapID":"B2", "updatedAt":{"$gte":{"__type":"Date","iso":"2023-12-27T17:00:00Z"}, "$lt":{"__type":"Date","iso":"2024-01-03T17:00:00Z"}}}
+//! Fetches and handles weekly challenges
 
-use reqwest::{header::CONTENT_TYPE, Client};
+use anyhow::{anyhow, Result};
+use colored::Colorize;
+use reqwest::Client;
+use sqlx::SqliteConnection;
 
 use crate::{
     config::SETTINGS,
-    embed::get_weekly_embed,
+    db,
     request::make_request,
     score::Score,
-    webhook::WebhookRequest,
-    weekly_data::{ScoreBucket, Weekly},
+    weekly_data::{self, ScoreBucket},
 };
 
-pub async fn fetch(
-    client: &Client,
-    state: &WeekState,
-    bucket: &ScoreBucket,
-) -> Result<Vec<Score>, String> {
+/// Fetches the world record for a given week state and scorebucket
+pub async fn fetch(client: &Client, state: &WeekState, bucket: &ScoreBucket) -> Result<Vec<Score>> {
     let bucket_state = match state {
         WeekState::Current => bucket.current.clone(),
         WeekState::Previous => bucket.previous.clone(),
@@ -61,7 +60,7 @@ pub async fn fetch(
         .await
         {
             Ok(resp) => resp,
-            Err(err) => return Err(format!("Failed to fetch weekly: {}", err)),
+            Err(err) => return Err(anyhow!("Failed to fetch weekly: {}", err)),
         };
         let mut score = score
             .first()
@@ -77,31 +76,39 @@ pub async fn fetch(
     Ok(scores)
 }
 
-pub async fn send_weekly_embed(client: &Client, weekly: &Weekly, previous_scores: &Vec<Score>) {
-    let embed = get_weekly_embed(&weekly, &previous_scores);
-    let request_struct = WebhookRequest {
-        embeds: vec![embed],
+/// Checks if theres a new weekly challenge or not
+///
+/// Uses the saved end date in the database and compares to the server
+pub async fn check(
+    conn: &mut SqliteConnection,
+    client: &Client,
+) -> (bool, Option<weekly_data::Weekly>) {
+    let newest_data = match weekly_data::Weekly::fetch(client).await {
+        Ok(data) => data,
+        Err(_) => {
+            println!("{}", "Failed to fetch newest weekly data".red().bold());
+            return (false, None);
+        }
     };
 
-    for url in &SETTINGS.read().unwrap().discord.weekly_webhooks {
-        match client
-            .post(url.clone() + "?wait=true")
-            .json(&request_struct)
-            .header(CONTENT_TYPE, "application/json")
-            .send()
-            .await
-        {
-            Ok(_) => (),
-            Err(_) => println!("Failed to send challenge webhook"),
-        };
+    let db_date = match db::get_current_weekly_end(conn).await {
+        Ok(date) => date,
+        Err(_) => return (true, Some(newest_data)), // Probably means it doesnt exist yet
+    };
+
+    // If the current start date is different, we got a new one
+    if newest_data.score_buckets.current.end_date != db_date {
+        return (true, Some(newest_data));
     }
+
+    (false, None)
 }
 
-pub fn check() -> bool {
-    todo!()
-}
-
+/// The week state
+#[allow(dead_code)]
 pub enum WeekState {
+    /// For the current weekly challenge
     Current,
+    /// For the previous weekly challenge
     Previous,
 }

@@ -1,3 +1,5 @@
+//! Used to send webhooks to Discords API
+
 use std::collections::HashMap;
 
 use colored::Colorize;
@@ -6,10 +8,14 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     config::SETTINGS,
-    embed::{get_score_embed, Embed},
+    embed::{get_score_embed, get_weekly_embed, Embed},
     score::Score,
+    weekly_data::Weekly,
 };
 
+/// Sends World Record announcement message(s)
+///
+/// Given the tuple of scores, (`Vec<(new, previous)`)
 pub async fn send_webhooks(
     client: &Client,
     scores: Vec<(Score, Score)>,
@@ -36,7 +42,8 @@ pub async fn send_webhooks(
     }
 }
 
-async fn send_to_all_webhooks(client: &Client, embeds: &WebhookRequest) -> Vec<String> {
+/// Sends an embed to all webhooks in `SETTINGS.discord.webhooks`
+pub async fn send_to_all_webhooks(client: &Client, embeds: &WebhookRequest) -> Vec<String> {
     let mut ids: Vec<String> = vec![];
 
     for url in &SETTINGS.read().unwrap().discord.webhooks {
@@ -68,8 +75,31 @@ async fn send_to_all_webhooks(client: &Client, embeds: &WebhookRequest) -> Vec<S
     ids
 }
 
+/// Sends a weekly announcement embed to all webhooks in `SETTINGS.discord.weekly_webhooks`
+pub async fn send_weekly_embed(client: &Client, weekly: &Weekly, previous_scores: &Vec<Score>) {
+    let embed = get_weekly_embed(&weekly, &previous_scores);
+    let request_struct = WebhookRequest {
+        embeds: vec![embed],
+    };
+
+    for url in &SETTINGS.read().unwrap().discord.weekly_webhooks {
+        match client
+            .post(url.clone())
+            .json(&request_struct)
+            .header(CONTENT_TYPE, "application/json")
+            .send()
+            .await
+        {
+            Ok(_) => (),
+            Err(_) => println!("Failed to send challenge webhook"),
+        };
+    }
+}
+
+/// Webhook request, does not contain all Discord documented fields
 #[derive(Debug, Serialize)]
 pub struct WebhookRequest {
+    /// A vec of embeds to send, limit of 10 at a time
     pub embeds: Vec<Embed>,
 }
 
