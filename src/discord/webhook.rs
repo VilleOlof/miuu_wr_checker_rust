@@ -8,9 +8,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     config::SETTINGS,
-    embed::{get_score_embed, get_weekly_embed, Embed},
-    score::Score,
-    weekly_data::Weekly,
+    discord::embed::{get_score_embed, get_weekly_embed, Embed},
+    miu::{score::Score, weekly_data::Weekly},
 };
 
 /// Sends World Record announcement message(s)

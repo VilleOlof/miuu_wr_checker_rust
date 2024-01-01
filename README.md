@@ -8,9 +8,13 @@
 # ./config.toml
 
 database_url = "./db.sqlite"
+loop_wait_seconds = 120
 
 [discord]
 webhooks = [
+    "https://discord.com/api/webhooks/.../...",
+]
+weekly_webhooks = [
     "https://discord.com/api/webhooks/.../...",
 ]
 

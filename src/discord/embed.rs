@@ -3,7 +3,7 @@
 use chrono::{DateTime, Utc};
 use serde::Serialize;
 
-use crate::{
+use crate::miu::{
     score::{RecapScore, Score},
     weekly_data::{NameLang, Weekly},
 };

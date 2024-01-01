@@ -7,7 +7,7 @@ use reqwest::{header::USER_AGENT, Client, Response, Url};
 
 use crate::{
     config::SETTINGS,
-    score::{Results, Score},
+    miu::score::{Results, Score},
 };
 
 fn get_user_agent() -> String {

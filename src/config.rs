@@ -33,6 +33,8 @@ lazy_static! {
 pub struct Settings {
     /// The filepath or URL to the sqlite database
     pub database_url: String,
+    /// How long to wait between each main iteration
+    pub loop_wait_seconds: u64,
     /// A struct that contains discord related settings
     pub discord: Discord,
     /// A struct that contains parse related settings

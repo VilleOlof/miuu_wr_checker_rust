@@ -1,10 +1,17 @@
 //! Functions and things related to pure Marble It Up! fetching
 
+pub mod replay;
+pub mod score;
+pub mod weekly;
+pub mod weekly_data;
+
 use crate::{
-    embed,
+    discord::{
+        embed,
+        webhook::{self, WebhookRequest},
+    },
+    miu::score::{RecapScore, Score},
     request::make_request,
-    score::{RecapScore, Score},
-    webhook::{self, WebhookRequest},
 };
 use anyhow::{anyhow, Result};
 use chrono::{DateTime, Utc};

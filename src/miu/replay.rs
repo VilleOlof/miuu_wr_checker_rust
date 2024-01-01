@@ -5,7 +5,7 @@ use std::fs;
 use anyhow::{anyhow, Result};
 use reqwest::Client;
 
-use crate::{config::SETTINGS, request::raw_request, score::Score};
+use crate::{config::SETTINGS, miu::score::Score, request::raw_request};
 
 /// Downloads a replay and saves it to disk
 ///

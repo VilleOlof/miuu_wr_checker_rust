@@ -8,7 +8,7 @@ use reqwest::{Client, Url};
 use serde::Deserialize;
 use serde_with::{serde_as, EnumMap};
 
-use crate::{config::SETTINGS, request::raw_request, score::Results};
+use crate::{config::SETTINGS, miu::score::Results, request::raw_request};
 
 /// An entire weekly challenge
 #[derive(Debug, Deserialize, Clone)]

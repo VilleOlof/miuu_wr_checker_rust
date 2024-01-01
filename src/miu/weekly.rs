@@ -8,9 +8,11 @@ use sqlx::SqliteConnection;
 use crate::{
     config::SETTINGS,
     db,
+    miu::{
+        score::Score,
+        weekly_data::{self, ScoreBucket},
+    },
     request::make_request,
-    score::Score,
-    weekly_data::{self, ScoreBucket},
 };
 
 /// Fetches the world record for a given week state and scorebucket

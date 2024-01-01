@@ -7,7 +7,7 @@ use std::collections::HashMap;
 
 use crate::{
     config::SETTINGS,
-    score::{RecapScore, Score},
+    miu::score::{RecapScore, Score},
 };
 
 /// Create all tables in the database

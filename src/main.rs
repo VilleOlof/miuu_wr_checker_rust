@@ -19,21 +19,25 @@ use colored::*;
 use reqwest::Client;
 use sqlx::SqliteConnection;
 
-use crate::{db::*, metadata::*, miu::get_wrs, replay::download_replay, score::Score, webhook::*};
+use crate::{
+    db::*,
+    discord::webhook::*,
+    metadata::*,
+    miu::{
+        get_wrs,
+        replay::download_replay,
+        score::Score,
+        weekly::{check, fetch, WeekState},
+        weekly_data::NameLang,
+    },
+};
 
 pub mod config;
 pub mod db;
-pub mod embed;
+pub mod discord;
 pub mod metadata;
 pub mod miu;
-pub mod replay;
 pub mod request;
-pub mod score;
-pub mod webhook;
-pub mod weekly;
-pub mod weekly_data;
-
-const SLEEPDURATION: Duration = Duration::from_secs(120);
 
 // !! convert all String related Results to custom error
 // Send a DB backup once every 2 weeks?
@@ -62,6 +66,7 @@ async fn main() -> Result<()> {
 
     let mut confirmed_wrs: HashMap<String, Score> = get_all(&mut conn, &level_ids).await;
 
+    let sleep_wait = Duration::from_secs(config::SETTINGS.read().unwrap().loop_wait_seconds);
     let mut iter_count: u32 = 0;
     loop {
         let start = Instant::now();
@@ -120,26 +125,19 @@ async fn main() -> Result<()> {
         send_webhooks(&client, new_wrs, &level_titles).await;
 
         // Weekly part, refactor into different function
-        let new_weekly = weekly::check(&mut conn, &client).await;
+        let new_weekly = check(&mut conn, &client).await;
         if let Some(weekly_data) = new_weekly.1 {
-            let prev_scores = weekly::fetch(
-                &client,
-                &weekly::WeekState::Previous,
-                &weekly_data.score_buckets,
-            )
-            .await;
+            let prev_scores =
+                fetch(&client, &WeekState::Previous, &weekly_data.score_buckets).await;
 
             if let Ok(scores) = prev_scores {
-                webhook::send_weekly_embed(&client, &weekly_data, &scores).await;
+                send_weekly_embed(&client, &weekly_data, &scores).await;
                 db::upsert_weekly_end(&mut conn, weekly_data.score_buckets.current.end_date).await;
 
                 println!(
                     "{} [{}]",
                     "New Weekly Challenge Posted!".green().bold(),
-                    &weekly_data
-                        .score_buckets
-                        .current
-                        .get_name(weekly_data::NameLang::En)
+                    &weekly_data.score_buckets.current.get_name(NameLang::En)
                 );
             }
 
@@ -171,7 +169,7 @@ async fn main() -> Result<()> {
         );
         iter_count += 1;
 
-        sleep(SLEEPDURATION);
+        sleep(sleep_wait);
     }
 }
 
