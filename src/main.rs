@@ -15,6 +15,7 @@ use std::{
 };
 
 use anyhow::Result;
+use chrono::Utc;
 use colored::*;
 use reqwest::Client;
 use sqlx::SqliteConnection;
@@ -39,12 +40,12 @@ pub mod metadata;
 pub mod miu;
 pub mod request;
 
-// !! convert all String related Results to custom error
 // Send a DB backup once every 2 weeks?
-// Send a weekly recap of every new WR? sql query to sort newly ones
 
-// Weekly WR Recap: Total Improvement, each level should be a field with the name as title, value should be
-// the score, username, time, when, and then on a new line, the improvement during the week?
+// Change Weekly Challenge embed to be more like old beeper,
+// have modifiers and levels has two fields before the previous, with both being just lists. so people know the levels
+
+// Combine old WR beeper posts, take the fields, improvement and level in description, but user, time and platform in six fields
 
 #[tokio::main]
 async fn main() -> Result<()> {

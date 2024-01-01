@@ -111,9 +111,11 @@ impl Score {
         let seconds = dur.as_secs() % 60;
         let millis = {
             let num = self.time.floor();
-            self.time - num
+            let dec = self.time - num;
+
+            format!("{:.6}", dec)[2..].to_string()
         };
 
-        format!("{:0>2}:{:0>2}.{:0>2}", minutes, seconds, millis)
+        format!("{:0>2}:{:0>2}.{}", minutes, seconds, millis)
     }
 }
