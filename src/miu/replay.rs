@@ -68,3 +68,13 @@ fn get_name(score: &Score) -> String {
 
     format!("{}_{}_{}.replay", file_count, score.username, score.time)
 }
+
+#[test]
+fn test_path() {
+    use crate::test_util::get_fake_score;
+
+    let mut score: Score = get_fake_score(10.0..15.0);
+    score.map_id = "test".into();
+
+    assert_eq!("./replays/test/", &get_path(&score));
+}

@@ -175,11 +175,6 @@ pub async fn update_level(conn: &mut SqliteConnection, score: &Score) -> Result<
 ///
 /// And only for the levels specified,
 /// all levels given also needs a key in the hashmap to convert to level title.
-///
-/// # Example
-/// ```rust
-/// db::get_latest_world_records(&mut conn, chrono::Duration::days(7), &level_ids).await
-/// ```
 pub async fn get_latest_world_records(
     conn: &mut SqliteConnection,
     duration: Duration,

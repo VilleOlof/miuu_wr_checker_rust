@@ -35,13 +35,17 @@ const APPLICATION_ID_HEADER: &str = "X-Parse-Application-Id";
 /// # Example
 ///
 /// ```
+/// use miuu_wr_checker_rust::request::make_request;
+/// use reqwest::Client;
+///
+/// let client = Client::new();
+///
 /// let results = make_request(
 ///     &client,
 ///     vec![("limit", "1"), ("where", "{\"username\":\"VilleOlof\"}")],
 ///     None,
 ///     None
-/// )
-/// .await?;
+/// );
 /// ```
 pub async fn make_request(
     client: &Client,

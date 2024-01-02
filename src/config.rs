@@ -14,9 +14,9 @@ lazy_static! {
     /// # Example
     ///
     /// ```rust
-    /// use config::SETTINGS;
+    /// use miuu_wr_checker_rust::config::SETTINGS;
     ///
-    /// let db_url = SETTINGS::read().unwrap().database_url;
+    /// let db_url = &SETTINGS.read().unwrap().database_url;
     /// ```
     pub static ref SETTINGS: RwLock<Settings> = RwLock::new(
         Config::builder()

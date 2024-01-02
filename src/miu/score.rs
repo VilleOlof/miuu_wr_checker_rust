@@ -119,3 +119,22 @@ impl Score {
         format!("{:0>2}:{:0>2}.{}", minutes, seconds, millis)
     }
 }
+
+#[test]
+fn test_formatted_time() {
+    use crate::test_util::get_fake_score;
+
+    let mut score_1 = get_fake_score(0.0..1.0);
+    score_1.time = 1.0;
+    let mut score_2 = get_fake_score(0.0..1.0);
+    score_2.time = 5.242422;
+    let mut score_3 = get_fake_score(0.0..1.0);
+    score_3.time = 125.242966;
+    let mut score_4 = get_fake_score(0.0..1.0);
+    score_4.time = 2421.592041;
+
+    assert_eq!("1", score_1.get_formatted_time());
+    assert_eq!("5.242422", score_2.get_formatted_time());
+    assert_eq!("02:05.242966", score_3.get_formatted_time());
+    assert_eq!("40:21.592041", score_4.get_formatted_time());
+}

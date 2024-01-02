@@ -8,7 +8,8 @@ use crate::miu::{
     weekly_data::{Challenge, NameLang, Weekly},
 };
 
-fn get_default_footer() -> Footer {
+/// Gets the default footer for all embeds
+pub fn get_default_footer() -> Footer {
     let version = env!("CARGO_PKG_VERSION");
 
     Footer {
@@ -213,44 +214,82 @@ pub fn get_weekly_recap_embed(
 /// Just those that are needed
 #[derive(Debug, Serialize, Clone)]
 pub struct Embed {
-    r#type: String,
-    title: String,
-    description: String,
-    color: u32,
-    timestamp: DateTime<Utc>,
-    footer: Footer,
-    thumbnail: Option<Thumbnail>,
-    image: Option<Image>,
-    fields: Vec<Field>,
+    /// The type of the embed
+    pub r#type: String,
+    /// Title on top of the embed
+    pub title: String,
+    /// The description, comes before fields
+    pub description: String,
+    /// The side color id
+    pub color: u32,
+    /// Footer timestamp
+    pub timestamp: DateTime<Utc>,
+    /// Footer struct
+    pub footer: Footer,
+    /// Optional Thumbnail at the top
+    pub thumbnail: Option<Thumbnail>,
+    /// Optional Image at the bottom
+    pub image: Option<Image>,
+    /// Fields
+    pub fields: Vec<Field>,
 }
 
 /// A discord embed footer
 #[derive(Debug, Serialize, Clone)]
 pub struct Footer {
-    text: String,
-    url: String,
-    icon_url: String,
+    /// The text inside the footer
+    pub text: String,
+    /// Url for the footer
+    pub url: String,
+    /// Url for the footer icon
+    pub icon_url: String,
 }
 
 /// A discord embed image
 #[derive(Debug, Serialize, Clone)]
 pub struct Image {
-    url: String,
-    proxy_url: Option<String>,
-    height: Option<i32>,
-    width: Option<i32>,
+    /// Url of the image, https
+    pub url: String,
+    /// Proxy url, optional
+    pub proxy_url: Option<String>,
+    /// Fixed Height
+    pub height: Option<i32>,
+    /// Fixed Width
+    pub width: Option<i32>,
 }
 
 /// A discord embed thumbnail
 #[derive(Debug, Serialize, Clone)]
 pub struct Thumbnail {
-    url: String,
+    /// Url for the thumbnail, https
+    pub url: String,
 }
 
 /// A discord embed field
 #[derive(Debug, Serialize, Clone)]
 pub struct Field {
-    name: String,
-    value: String,
-    inline: bool,
+    /// The Title of the field
+    pub name: String,
+    /// The "description" or just value
+    pub value: String,
+    /// If the field should be inline
+    pub inline: bool,
+}
+
+#[test]
+fn test_footer() {
+    assert!(!get_default_footer().text.is_empty());
+}
+
+#[test]
+fn test_score_embed() {
+    use crate::test_util::get_fake_score;
+
+    assert!(!get_score_embed(
+        &get_fake_score(5.0..7.0),
+        &get_fake_score(7.0..11.0),
+        "Test Level".into()
+    )
+    .title
+    .is_empty());
 }
