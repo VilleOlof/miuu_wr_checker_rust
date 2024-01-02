@@ -39,8 +39,6 @@ pub mod metadata;
 pub mod miu;
 pub mod request;
 
-// Send a DB backup once every 2 weeks?
-
 #[tokio::main]
 async fn main() -> Result<()> {
     println!(
