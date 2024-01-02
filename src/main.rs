@@ -15,7 +15,6 @@ use std::{
 };
 
 use anyhow::Result;
-use chrono::Utc;
 use colored::*;
 use reqwest::Client;
 use sqlx::SqliteConnection;
@@ -41,11 +40,6 @@ pub mod miu;
 pub mod request;
 
 // Send a DB backup once every 2 weeks?
-
-// Change Weekly Challenge embed to be more like old beeper,
-// have modifiers and levels has two fields before the previous, with both being just lists. so people know the levels
-
-// Combine old WR beeper posts, take the fields, improvement and level in description, but user, time and platform in six fields
 
 #[tokio::main]
 async fn main() -> Result<()> {

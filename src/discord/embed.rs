@@ -5,7 +5,7 @@ use serde::Serialize;
 
 use crate::miu::{
     score::{RecapScore, Score},
-    weekly_data::{NameLang, Weekly},
+    weekly_data::{Challenge, NameLang, Weekly},
 };
 
 fn get_default_footer() -> Footer {
@@ -67,16 +67,28 @@ pub fn get_score_embed(new: &Score, prev: &Score, level_title: String) -> Embed 
 
 /// Gets an embed for the weekly challenge announcement post
 pub fn get_weekly_embed(weekly: &Weekly, previous_scores: &Vec<Score>) -> Embed {
-    let curr_physics_mods = weekly
+    fn get_physics_mods(challenge: &Challenge) -> Vec<String> {
+        challenge
+            .levels
+            .first()
+            .expect("somehow failed to get levels for the current week")
+            .physicsmod
+            .clone()
+            .into_iter()
+            .map(|p| p.to_string())
+            .collect::<Vec<String>>()
+    }
+
+    let curr_physics_mods = get_physics_mods(&weekly.score_buckets.current);
+    let prev_physics_mods = get_physics_mods(&weekly.score_buckets.previous);
+
+    let levels = weekly
         .score_buckets
         .current
         .levels
-        .first()
-        .expect("somehow failed to get levels for the current week")
-        .physicsmod
         .clone()
         .into_iter()
-        .map(|p| p.to_string())
+        .map(|l| l.name)
         .collect::<Vec<String>>();
 
     let mut prev_fields: Vec<Field> = vec![];
@@ -95,14 +107,36 @@ pub fn get_weekly_embed(weekly: &Weekly, previous_scores: &Vec<Score>) -> Embed 
         });
     }
 
+    let mut fields = vec![
+        Field {
+            name: String::from("Current Modifiers:"),
+            value: curr_physics_mods.join("\n").to_string(),
+            inline: true,
+        },
+        Field {
+            name: String::from("Current Levels:"),
+            value: levels.join("\n").to_string(),
+            inline: true,
+        },
+        Field {
+            name: String::from("Previous Challenge:"),
+            value: format!("{}", weekly.score_buckets.previous.get_name(NameLang::En)),
+            inline: false,
+        },
+        Field {
+            name: String::from("Previous Modifiers:"),
+            value: prev_physics_mods.join("\n").to_string(),
+            inline: false,
+        },
+    ];
+    fields.append(&mut prev_fields);
+
     Embed {
         r#type: String::from("rich"),
         title: String::from("***New Ultra Weekly Challenge Starts Now!***"),
         description: format!(
-            "**Challenge: {}**\n{} \n \n**Previous Challenge Winners**\n{}",
+            "**Current Challenge:**\n{}",
             weekly.score_buckets.current.get_name(NameLang::En),
-            curr_physics_mods.join("\n"),
-            weekly.score_buckets.previous.get_name(NameLang::En)
         ),
         color: 5763719,
         timestamp: Utc::now(),
@@ -115,7 +149,7 @@ pub fn get_weekly_embed(weekly: &Weekly, previous_scores: &Vec<Score>) -> Embed 
             width: None,
             height: None,
         }),
-        fields: prev_fields,
+        fields,
     }
 }
 
