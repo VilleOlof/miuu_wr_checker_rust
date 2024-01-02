@@ -154,6 +154,13 @@ async fn main() -> Result<()> {
             }
         }
 
+        if let Some(kuma_url) = &config::SETTINGS.read().unwrap().kuma_push_url {
+            match &client.get(kuma_url).send().await {
+                Ok(_) => println!("{}", "Successfully sent a kuma push".green()),
+                Err(err) => println!("{}: {}", "Failed to send a kuma push".red(), err),
+            }
+        }
+
         println!(
             "{} {:0>3} - {}",
             format!("[{:0<5}s]", start.elapsed().as_millis() as f64 / 1000.0).bright_black(),

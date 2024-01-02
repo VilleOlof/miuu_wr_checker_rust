@@ -35,6 +35,10 @@ pub struct Settings {
     pub database_url: String,
     /// How long to wait between each main iteration
     pub loop_wait_seconds: u64,
+    /// Sends an uptime request to kuma if filled in
+    ///
+    /// Mostly for my own personal uptime dashboard
+    pub kuma_push_url: Option<String>,
     /// A struct that contains discord related settings
     pub discord: Discord,
     /// A struct that contains parse related settings
