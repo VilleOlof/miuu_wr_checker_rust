@@ -87,8 +87,12 @@ pub async fn check(
 ) -> (bool, Option<weekly_data::Weekly>) {
     let newest_data = match weekly_data::Weekly::fetch(client).await {
         Ok(data) => data,
-        Err(_) => {
-            println!("{}", "Failed to fetch newest weekly data".red().bold());
+        Err(err) => {
+            println!(
+                "{}: {}",
+                "Failed to fetch newest weekly data".red().bold(),
+                err
+            );
             return (false, None);
         }
     };
