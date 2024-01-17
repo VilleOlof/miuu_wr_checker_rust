@@ -206,6 +206,10 @@ pub enum PhysicsMod {
     #[serde(rename = "jumpmult")]
     JumpMult(f32),
 
+    /// Changes the jump height
+    #[serde(rename = "jumpforce")]
+    JumpForce(f32),
+
     /// Changes the bounce height
     #[serde(rename = "bouncemult")]
     BounceMult(f32),
@@ -342,6 +346,7 @@ impl ToString for PhysicsMod {
         match self {
             PhysicsMod::Gravity(v) => format!("Gravity: {}", float_to_perct(v)),
             PhysicsMod::JumpMult(v) => format!("Jump Height: {}", float_to_perct(v)),
+            PhysicsMod::JumpForce(v) => format!("Jump Force: {}", float_to_perct(v)),
             PhysicsMod::BounceMult(v) => format!("Bounce Force: {}", float_to_perct(v)),
             PhysicsMod::ScaleMult(v) => format!("Marble Size: {}", float_to_perct(v)),
             PhysicsMod::MassMult(v) => format!("Mass: {}", float_to_perct(v)),
