@@ -250,6 +250,14 @@ pub enum PhysicsMod {
     #[serde(rename = "rollY")]
     RollY(f32),
 
+    /// Changes the X air speed
+    #[serde(rename = "airX")]
+    AirX(f32),
+
+    /// Changes the Y air speed
+    #[serde(rename = "airY")]
+    AirY(f32),
+
     /// If the marble can blast or not
     #[serde(rename = "canblast")]
     CanBlast(bool),
@@ -357,6 +365,8 @@ impl ToString for PhysicsMod {
             PhysicsMod::BlastCooldownMult(v) => format!("Blast Cooldown: {}", float_to_perct(v)),
             PhysicsMod::RollX(v) => format!("Roll Force X: {}", float_to_perct(v)),
             PhysicsMod::RollY(v) => format!("Roll Force Y: {}", float_to_perct(v)),
+            PhysicsMod::AirX(v) => format!("Air Force X: {}", float_to_perct(v)),
+            PhysicsMod::AirY(v) => format!("Air Force Y: {}", float_to_perct(v)),
             PhysicsMod::CanBlast(_) => String::from("Blast Available"),
             PhysicsMod::AirJumps(v) => format!("Air Jumps: {}", v),
             PhysicsMod::NoPowerups(_) => String::from("No Powerups"),
