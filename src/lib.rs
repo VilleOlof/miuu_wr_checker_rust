@@ -121,14 +121,18 @@ pub async fn start() -> Result<()> {
 
             if let Ok(scores) = prev_scores {
                 send_weekly_embed(&client, &weekly_data, &scores).await;
-                db::upsert_weekly_end(&mut conn, weekly_data.score_buckets.current.end_date).await;
 
                 println!(
                     "{} [{}]",
                     "New Weekly Challenge Posted!".green().bold(),
                     &weekly_data.score_buckets.current.get_name(NameLang::En)
                 );
+            } else {
+                println!("{}", "No Scores for previous weekly".red().bold());
             }
+
+            // always upsert weekly even if no previous scores
+            db::upsert_weekly_end(&mut conn, weekly_data.score_buckets.current.end_date).await;
 
             let latest_scores = db::get_latest_world_records(
                 &mut conn,

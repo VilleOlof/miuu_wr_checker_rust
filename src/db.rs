@@ -2,6 +2,7 @@
 
 use anyhow::Result;
 use chrono::{DateTime, Duration, Utc};
+use colored::Colorize;
 use sqlx::{prelude::FromRow, Connection, SqliteConnection};
 use std::collections::HashMap;
 
@@ -104,7 +105,7 @@ pub async fn upsert_weekly_end(conn: &mut SqliteConnection, date: DateTime<Utc>)
     .await
     {
         Err(err) => panic!("Failed to upsert weekly end: {}", err),
-        _ => (),
+        _ => println!("{}", "Upserted weekly end".green()),
     }
 }
 
