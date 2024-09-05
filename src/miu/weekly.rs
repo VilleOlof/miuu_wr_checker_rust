@@ -66,7 +66,7 @@ pub async fn fetch(client: &Client, state: &WeekState, bucket: &ScoreBucket) -> 
         };
         let mut score = score
             .first()
-            .expect("No elements in scores, weekly")
+            .ok_or(anyhow!("No elements on scores"))?
             .clone();
 
         // Since weekly challenge map_ids are A/B#, we just quickly convert them back
